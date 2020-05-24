@@ -22,10 +22,21 @@ import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta.StatementHandle;
 
+import java.sql.SQLException;
+
 public class KylinStatement extends AvaticaStatement {
 
     protected KylinStatement(AvaticaConnection connection, StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
         super(connection, h, resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 
+    @Override
+    public void setQueryTimeout(int seconds) throws SQLException {
+        try {
+            super.setQueryTimeout(seconds);
+            ((KylinClient)((KylinConnection)this.connection).getRemoteClient()).setTimeout(seconds*1000);
+        } catch (SQLException e){
+            throw e;
+        }
+    }
 }

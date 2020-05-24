@@ -18,6 +18,39 @@
 
 package org.apache.kylin.jdbc;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
+import org.apache.calcite.avatica.ColumnMetaData.ScalarType;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.util.EntityUtils;
+import org.apache.kylin.jdbc.KylinMeta.KMetaCatalog;
+import org.apache.kylin.jdbc.KylinMeta.KMetaProject;
+import org.apache.kylin.jdbc.KylinMeta.KMetaSchema;
+import org.apache.kylin.jdbc.KylinMeta.KMetaTable;
+import org.apache.kylin.jdbc.KylinMeta.KMetaColumn;
+import org.apache.kylin.jdbc.json.PreparedQueryRequest;
+import org.apache.kylin.jdbc.json.SQLResponseStub;
+import org.apache.kylin.jdbc.json.StatementParameter;
+import org.apache.kylin.jdbc.json.TableMetaStub;
+import org.apache.kylin.jdbc.json.TableMetaStub.ColumnMetaStub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -35,40 +68,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.ColumnMetaData.Rep;
-import org.apache.calcite.avatica.ColumnMetaData.ScalarType;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.apache.kylin.jdbc.KylinMeta.KMetaCatalog;
-import org.apache.kylin.jdbc.KylinMeta.KMetaColumn;
-import org.apache.kylin.jdbc.KylinMeta.KMetaProject;
-import org.apache.kylin.jdbc.KylinMeta.KMetaSchema;
-import org.apache.kylin.jdbc.KylinMeta.KMetaTable;
-import org.apache.kylin.jdbc.json.PreparedQueryRequest;
-import org.apache.kylin.jdbc.json.SQLResponseStub;
-import org.apache.kylin.jdbc.json.StatementParameter;
-import org.apache.kylin.jdbc.json.TableMetaStub;
-import org.apache.kylin.jdbc.json.TableMetaStub.ColumnMetaStub;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 
 public class KylinClient implements IRemoteClient {
 
@@ -105,6 +104,11 @@ public class KylinClient implements IRemoteClient {
     @VisibleForTesting
     void setHttpClient(HttpClient httpClient) {
         this.httpClient = httpClient;
+    }
+
+    public void setTimeout(int timeoutMillis){
+        httpClient.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, timeoutMillis);
+        httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, timeoutMillis);
     }
 
     @SuppressWarnings("rawtypes")
