@@ -18,6 +18,12 @@
 
 package org.apache.kylin.jdbc;
 
+import org.apache.calcite.avatica.AvaticaConnection;
+import org.apache.calcite.avatica.AvaticaPreparedStatement;
+import org.apache.calcite.avatica.Meta.Signature;
+import org.apache.calcite.avatica.Meta.StatementHandle;
+import org.apache.calcite.avatica.remote.TypedValue;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.sql.NClob;
@@ -26,12 +32,6 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.calcite.avatica.AvaticaConnection;
-import org.apache.calcite.avatica.AvaticaPreparedStatement;
-import org.apache.calcite.avatica.Meta.Signature;
-import org.apache.calcite.avatica.Meta.StatementHandle;
-import org.apache.calcite.avatica.remote.TypedValue;
 
 public class KylinPreparedStatement extends AvaticaPreparedStatement {
 
@@ -122,5 +122,11 @@ public class KylinPreparedStatement extends AvaticaPreparedStatement {
 
     public void setNClob(int parameterIndex, Reader reader) throws SQLException {
         getSite(parameterIndex).setNClob(reader);
+    }
+
+    @Override
+    public void setQueryTimeout(int seconds) throws SQLException {
+        super.setQueryTimeout(seconds);
+        ((KylinClient)((KylinConnection)this.connection).getRemoteClient()).setTimeout(seconds*1000);
     }
 }
